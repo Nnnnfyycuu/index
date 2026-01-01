@@ -25,7 +25,7 @@ body{
 .time{font-size:72px;margin:30px 0}
 .message{
     font-size:24px;
-    color:red;
+    color:#d32f2f;
     display:none;
     margin:20px 0
 }
@@ -44,26 +44,24 @@ button{
 
     <div class="box">
         <h3>📘 Học hiểu sơ (30 phút)</h3>
-        <button onclick="buttonSound(); goTimer(2)">Bắt đầu</button>
+        <button onclick="buttonSound(); goTimer(2,'basic')">Bắt đầu</button>
     </div>
 
     <div class="box">
         <h3>📗 Học hiểu sâu (90 phút)</h3>
-        <button onclick="buttonSound(); goTimer(5400)">Bắt đầu</button>
+        <button onclick="buttonSound(); goTimer(2,'deep')">Bắt đầu</button>
     </div>
 
     <div class="box">
         <h3>🔥 Tryhard (180 phút)</h3>
-        <button onclick="buttonSound(); goTimer(10800)">Bắt đầu</button>
+        <button onclick="buttonSound(); goTimer(2,'tryhard')">Bắt đầu</button>
     </div>
 </div>
 
 <div id="timerPage" class="page">
     <div id="display" class="time">00:00</div>
 
-    <div id="success" class="message">
-        ⏰ Làm tốt lắm!!!
-    </div>
+    <div id="success" class="message"></div>
 
     <button onclick="buttonSound(); startTimer()">▶ Start</button>
     <button onclick="buttonSound(); resetTimer()">⟳ Reset</button>
@@ -72,73 +70,91 @@ button{
 </div>
 
 <script>
-let totalTime=0;
-let remaining=0;
-let timer=null;
-let alarmInterval=null;
+/* ===== LỜI CHÚC THEO CHẾ ĐỘ ===== */
+const finishMessages = {
+    basic: "🎉 Bạn đã hiểu bài chỉ với 30 phút sao?",
+    deep: "💡 Chúc mừng, bạn khá chăm chỉ nhỉ?",
+    tryhard: "🔥 Không đỗ Bách khoa thì hơi phí!!!"
+};
+
+let currentMode = "";
+
+/* ===== TIMER ===== */
+let totalTime = 0;
+let remaining = 0;
+let timer = null;
+let alarmInterval = null;
 
 /* ===== ÂM THANH BẤM NÚT ===== */
-const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function buttonSound(){
-    const osc=audioCtx.createOscillator();
-    const gain=audioCtx.createGain();
-    osc.type="square";
-    osc.frequency.value=600;
-    gain.gain.setValueAtTime(0.12,audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.07);
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.value = 600;
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.07);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime+0.07);
+    osc.stop(audioCtx.currentTime + 0.07);
 }
 
-/* ===== ÂM THANH BÁO ĐỘNG (BÍP BÍP BÍP) ===== */
+/* ===== ÂM THANH BÁO ĐỘNG ===== */
 function alarmBeep(){
-    const osc=audioCtx.createOscillator();
-    const gain=audioCtx.createGain();
-    osc.type="square";
-    osc.frequency.value=900;
-    gain.gain.value=0.2;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.value = 900;
+    gain.gain.value = 0.5;
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime+0.15);
+    osc.stop(audioCtx.currentTime + 0.15);
 }
 
 function startAlarm(){
     stopAlarm();
-    alarmInterval=setInterval(alarmBeep,1000);
+alarmInterval = setInterval(alarmBeep, 900);
 }
 
 function stopAlarm(){
     if(alarmInterval){
         clearInterval(alarmInterval);
-        alarmInterval=null;
+        alarmInterval = null;
     }
 }
 
-/* ===== TIMER ===== */
-function goTimer(sec){
-    totalTime=sec;
-    remaining=sec;
+/* ===== CHUYỂN TRANG ===== */
+function goTimer(sec, mode){
+    totalTime = sec;
+    remaining = sec;
+    currentMode = mode;
+
     update();
-    document.getElementById("success").style.display="none";
-document.getElementById("home").classList.remove("active");
+    document.getElementById("success").style.display = "none";
+    document.getElementById("home").classList.remove("active");
     document.getElementById("timerPage").classList.add("active");
 }
 
 function startTimer(){
     if(timer) return;
-    timer=setInterval(()=>{
+
+    timer = setInterval(()=>{
         remaining--;
         update();
-        if(remaining<=0){
+
+        if(remaining <= 0){
             clearInterval(timer);
-            timer=null;
-            remaining=0;
+            timer = null;
+            remaining = 0;
             update();
-            document.getElementById("success").style.display="block";
+
+            const success = document.getElementById("success");
+            success.innerText = finishMessages[currentMode] || "⏰ Hết giờ";
+            success.style.display = "block";
+
             startAlarm();
         }
     },1000);
@@ -146,26 +162,27 @@ function startTimer(){
 
 function resetTimer(){
     clearInterval(timer);
-    timer=null;
-    remaining=totalTime;
+    timer = null;
+    remaining = totalTime;
     update();
-    document.getElementById("success").style.display="none";
+    document.getElementById("success").style.display = "none";
     stopAlarm();
 }
 
 function goHome(){
     clearInterval(timer);
-    timer=null;
+    timer = null;
     stopAlarm();
     document.getElementById("timerPage").classList.remove("active");
     document.getElementById("home").classList.add("active");
 }
 
+/* ===== HIỂN THỊ ===== */
 function update(){
-    const m=Math.floor(remaining/60);
-    const s=remaining%60;
-    document.getElementById("display").innerText=
-        String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    document.getElementById("display").innerText =
+        String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
 }
 </script>
 
